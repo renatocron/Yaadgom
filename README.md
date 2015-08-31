@@ -56,31 +56,23 @@ Yaadgom output string in markdown format, so you can use those generated files o
         }
     );
 
-# Tests Coverage
-
-I'm always trying to improve those numbers.
-Improve branch number is a very time-consuming task. There is a room for test all checking and defaults on tests.
-
-    @ version 0.05
-    ---------------------------- ------ ------ ------ ------ ------ ------ ------
-    File                           stmt   bran   cond    sub    pod   time  total
-    ---------------------------- ------ ------ ------ ------ ------ ------ ------
-    blib/lib/Stash/REST.pm         96.4   74.5   68.4  100.0  100.0  100.0   86.7
-    Total                          96.4   74.5   68.4  100.0  100.0  100.0   86.7
-    ---------------------------- ------ ------ ------ ------ ------ ------ ------
-
 # Class::Trigger names
 
-Updated @ Stash-REST 0.05
+On each trigger, the returning is used as the new version of the input. Except for process\_extras, where all returnings are concatenated.
 
-    $ grep  '$self0_05->call_trigger' lib/Stash/REST.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_04-/; print' | sort | uniq
+Updated @ Stash-REST 0.01
+
+    $ grep  '$self_0_01->call_trigger' lib/Yaadgom.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_01-/; print' | sort | uniq
 
 Trigger / variables:
 
-    $self0_05->call_trigger( 'after_stash_ctx', { stash => $staname, results => \@ret });
-    $self0_05->call_trigger( 'before_rest_delete', { url => $url, conf => \%conf } );
-    $self0_05->call_trigger( 'before_rest_get', { url => $url, conf => \%conf } );
-    $self0_05->call_trigger( 'before_rest_head', { url => $url, conf => \%conf } );
+    $self0_01->call_trigger( 'filename_generated', { req => $req, file => $file } );
+    $self0_01->call_trigger( 'format_title', { header => $desc } );
+    $self0_01->call_trigger( 'format_response_body', { response_str => $body } );
+    $self0_01->call_trigger( 'format_before_extras', { str => $str } );
+    $self0_01->call_trigger( 'format_after_extras', { str => $str } );
+    $self0_01->call_trigger( 'process_extras', %opt );
+    $self0_01->call_trigger( 'format_generated_str', { str => $format_time } );
 
 # AUTHOR
 
@@ -99,4 +91,8 @@ it under the same terms as Perl itself.
 
 # SEE ALSO
 
-[Stash::REST::TestMore](https://metacpan.org/pod/Stash::REST::TestMore), [Class::Trigger](https://metacpan.org/pod/Class::Trigger)
+[Shodo](https://metacpan.org/pod/Shodo)
+
+# SEE OTHER
+
+[Stash::REST](https://metacpan.org/pod/Stash::REST), [Class::Trigger](https://metacpan.org/pod/Class::Trigger)
