@@ -58,6 +58,17 @@
       }
    },
    "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/renatocron/Yaadgom/issues"
+      },
+      "homepage" : "https://github.com/renatocron/Yaadgom",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/renatocron/Yaadgom.git",
+         "web" : "https://github.com/renatocron/Yaadgom"
+      }
+   },
    "version" : "0.01",
    "x_contributors" : [
       "RenatoCRON <renato.cron@gmail.com>"

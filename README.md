@@ -33,7 +33,7 @@ Yaadgom - Yet Another Automatic Document Generator (On Markdown)
 
 Yaadgom helps you document your requests (to create an API Reference or something like that).
 
-Yaadgom output string in a markdown syntax, so you can pass it generated file to daux.io or other tool to generate online visualizations.
+Yaadgom output string in markdown format, so you can use those generated files on http://daux.io or other tools.
 
 # METHODS
 
