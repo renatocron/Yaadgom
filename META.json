@@ -1,7 +1,7 @@
 {
-   "abstract" : "Blah blah blah",
+   "abstract" : "Yet Another Automatic Document Generator (On Markdown)",
    "author" : [
-      "Renato <rentocron@cpan.org>"
+      "Renato CRON <rentocron@cpan.org>"
    ],
    "dynamic_config" : 0,
    "generated_by" : "Dist::Zilla version 5.039, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150005",
@@ -37,16 +37,30 @@
       },
       "runtime" : {
          "requires" : {
+            "Carp" : "0",
+            "Class::Trigger" : "0.14",
+            "JSON::MaybeXS" : "0",
+            "Moo" : "0",
+            "URI" : "0",
+            "namespace::clean" : "0",
             "perl" : "5.008005"
          }
       },
       "test" : {
          "requires" : {
-            "Test::More" : "0.96"
+            "HTTP::Request" : "0",
+            "HTTP::Response" : "0",
+            "LWP::UserAgent" : "0",
+            "Test::More" : "0.96",
+            "Test::Pod" : "0",
+            "URL::Encode" : "0.03"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.01"
+   "version" : "0.01",
+   "x_contributors" : [
+      "RenatoCRON <renato.cron@gmail.com>"
+   ]
 }
 

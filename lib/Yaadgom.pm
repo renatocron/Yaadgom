@@ -1,33 +1,344 @@
-package Yaadgom;
-
 use strict;
+package Foo::Yaadgom;
 use 5.008_005;
 our $VERSION = '0.01';
+use Moo;
+
+
+
+use Encode qw/decode/;
+use JSON::MaybeXS;
+use URI;
+use Carp;
+use Class::Trigger;
+
+has '_json_ed' => (
+    is      => 'rw',
+    lazy    => 1,
+    builder => '_build_json'
+);
+
+sub _build_json {
+    JSON::MaybeXS->new( utf8 => 1, pretty => 1, canonical => 1 );
+}
+
+has '_results'  => ( is => 'rw', default => sub { +{} } );
+has 'file_name' => ( is => 'rw', default => sub { $0 } );
+
+sub process_response {
+    my ( $self, %opt ) = @_;
+
+    my $req = $opt{req};
+    my $res = $opt{res};
+
+    for my $obj (qw/res req/) {
+        for my $func ( qw/as_string/, ( $obj eq 'req' ? qw/uri/ : () ) ) {
+            eval { $opt{$obj}->$func };
+            croak "Param{$obj}->$func() died, perhaps you forgot to pass an HTTP object: \n$@" if $@;
+        }
+    }
+
+    my $file = URI->new( $req->uri->path )->path;
+    $file =~ s/^\///;
+    $file =~ s/\/$//;
+    $file =~ s/\//-/gio;
+    $file =~ s/[0-9]+/*/go;
+    $file =~ s/[^a-z-*]//gio;
+
+    $self->call_trigger( 'filename_generated', { req => $req, file => $file } );
+    my @results = @{ $self->last_trigger_results };
+    $file = $results[-1] if $results[-1];
+
+    my $weight = defined $opt{weight} && $opt{weight} =~ /^[0-9]+$/ ? $opt{weight} : 1;
+
+    push @{ $self->_results->{$file}{$weight} },
+      {
+        extra    => $opt{extra},
+        file     => $file,
+        folder   => $opt{folder} || 'default',
+        markdown => $self->get_markdown(%opt)
+      };
+
+}
+
+sub _write_title {
+    my ( $self, $title ) = @_;
+    "## $title\n\n";
+}
+
+sub _write_subtitle {
+    my ( $self, $title ) = @_;
+    "### $title\n\n";
+}
+
+sub _write_line {
+    my ( $self, $title ) = @_;
+    my $str = "$title\n";
+}
+
+sub _write_preformated {
+    my ( $self, $str ) = @_;
+    "<pre>$str\n</pre>\n";
+}
+
+sub format_response_body {
+    my ( $self, $str ) = @_;
+    my ( $header, $body ) = split /\n\n/, $str;
+    if ( $header =~ /application\/json/ && $body ) {
+        $body = $self->_json_ed->encode( $self->_json_ed->decode($body) );
+        $body = decode( 'utf8', $body );
+    }
+
+    $self->call_trigger( 'format_response_body', { response_str => $body } );
+    my @results = @{ $self->last_trigger_results };
+    $body = $results[-1] if $results[-1];
+
+    return "$header\n$body";
+}
+
+sub get_markdown {
+    my ( $self, %opt ) = @_;
+
+    my $file_name = $self->file_name;
+
+    my $req = $opt{req};
+    my $res = $opt{res};
+
+    my $desc = join ' ', $req->method, $req->uri->path, $opt{extra}{is_fail} ? ' + expected failure' : '';
+
+    do {
+        $self->call_trigger( 'format_header', { header => $desc } );
+        my @results = @{ $self->last_trigger_results };
+        $desc = $results[-1] if $results[-1];
+    };
+
+    my $str = join '',
+      $self->_write_title($desc),
+      ( defined $file_name ? "<small>$file_name</small>\n" : '' ),
+      ( exists $opt{extra}{name} ? ( $self->_write_line( '> ' . $opt{extra}{name} . "\n" ) ) : () ),
+      $self->_write_subtitle('Request'),
+      $self->_write_preformated( $self->format_response_body( $req->as_string ) ),
+      $self->_write_subtitle('Response'),
+      $self->_write_preformated( $self->format_response_body( $res->as_string ) );
+
+    do {
+        $self->call_trigger( 'format_before_extras', { str => $str } );
+        my @results = @{ $self->last_trigger_results };
+        $str = $results[-1] if $results[-1];
+    };
+
+    do {
+        $self->call_trigger( 'process_extras', %opt );
+        my @results = @{ $self->last_trigger_results };
+        $str .= join '', $_ for @results;
+    };
+
+    if ( exists $opt{extra}{fields} ) {
+        $str .= $self->_write_subtitle('Fields details');
+        while ( my ( $key, $maybealist ) = each %{ $opt{extra}{fields} } ) {
+
+            $str .= $self->_write_line( '#### ' . $key );
+            if ( ref $maybealist eq 'ARRAY' ) {
+                $str .= $self->_write_line( '* ' . $_ ) for @$maybealist;
+            }else{
+                $str .= $self->_write_line( '- ' . $maybealist )
+            }
+        }
+    }
+
+    do {
+        $self->call_trigger( 'format_after_extras', { str => $str } );
+        my @results = @{ $self->last_trigger_results };
+        $str = $results[-1] if $results[-1];
+    };
+
+    return $str;
+}
+
+sub export_to_dir {
+    my ( $self, %conf ) = @_;
+
+    my $dir = $conf{dir};
+    croak "dir ($dir) is not an directory" unless -d $dir;
+
+    $self->map_results(
+        sub {
+            my (%info) = @_;
+
+            my $str    = $info{str};
+            my $folder = $info{folder};
+            my $file   = $dir . '/' . $folder . '/' . $info{file} . '.md';
+
+            mkdir $dir . '/' . $folder or croak "can't mkdir $dir/$folder $!";
+
+            open my $fh, '>>:utf8', $file or croak "cant open file $file $!";
+            print $fh $str;
+            close $fh;
+        }
+    );
+
+    return 1;
+}
+
+sub map_results {
+    my ( $self, $callback ) = @_;
+
+    my $tests = $self->_results;
+
+    foreach my $endpoint ( keys %$tests ) {
+
+        my @in_order;
+        foreach my $num ( sort { $a <=> $b } keys %{ $tests->{$endpoint} } ) {
+            push @in_order, @{ $tests->{$endpoint}{$num} };
+        }
+
+        my $folders = {};
+
+        foreach (@in_order) {
+            push @{ $folders->{ $_->{folder} }{ $_->{file} } }, $_;
+        }
+
+        for my $folder ( keys %$folders ) {
+            for my $file ( keys %{ $folders->{$folder} } ) {
+
+                my $str = join "\n<hr/>\n", map { $_->{markdown} } @{ $folders->{$folder}{$file} };
+
+                my $format_time = "\n<small>generated at " . gmtime(time) . " GMT</small>\n";
+                do {
+                    $self->call_trigger( 'format_generated_str', { str => $format_time } );
+                    my @results = @{ $self->last_trigger_results };
+                    $format_time = $results[-1] if $results[-1];
+                };
+
+                $str .= $format_time;
+
+                $callback->(
+                    folder => $folder,
+                    file   => $file || '_index',
+                    str    => $str
+                );
+
+            }
+        }
+
+    }
+
+}
 
 1;
+
 __END__
 
 =encoding utf-8
 
 =head1 NAME
 
-Yaadgom - Blah blah blah
+Yaadgom - Yet Another Automatic Document Generator (On Markdown)
 
 =head1 SYNOPSIS
 
-  use Yaadgom;
+    use Yaadgom;
+
+    # create an instance
+    my $foo = Yaadgom->new;
+
+    # call this methoed each request you want to document
+    $foo->process_response(
+        folder => 'test', # what 'folder' or 'category' this is
+        weight => 1     , # default order
+        req    => HTTP::Request->new ( GET => 'http://www.example.com/foobar' ),
+        res    => HTTP::Response->new( 200, 'OK', [ 'content-type' => 'application/json' ], '{"ok":1}' ),
+    );
+
+    # iterate over processed document, for each file.
+    # NOTE: This does not write to any file.
+    $foo->map_results(
+        sub {
+            my (%info) = @_;
+
+            is( $info{file},   'foobar', '"foobar" file' );
+            is( $info{folder}, 'test',   '"test" folder' );
+            ok( $info{str}, 'has str' );
+        }
+    );
+
 
 =head1 DESCRIPTION
 
-Yaadgom is
+Yaadgom helps you document your requests (to create an API Reference or something like that).
+
+Yaadgom output string in a markdown syntax, so you can pass it generated file to daux.io or other tool to generate online visualizations.
+
+=begin HTML
+
+<p><img src="http://i.imgur.com/N6KbTew.png" width="915" height="954" alt="Real web page generated by Yaadgom and daux.io" /></p>
+
+=end HTML
+
+
+=head1 METHODS
+
+=head2 new
+
+    Yaadgom->new(
+        file_name => "$0"
+    );
+
+=head2 process_response
+
+    $self->process_response(
+        folder => 'General',
+        weight => -150, # set as "first" thing on document
+        req    => HTTP::Request->new ( GET => 'http://www.example.com/login' ),
+        res    => HTTP::Response->new( 200, 'OK', [ 'content-type' => 'application/json' ], '{"has_password":1}' ),
+        extra => {
+             fields => { has_password => ['the user has password', 'but can came from facebook']},
+             you_can_extend_using => { 'Class_Trigger' => 'to process something else' }
+        }
+    );
+
+
+=head1 Tests Coverage
+
+I'm always trying to improve those numbers.
+Improve branch number is a very time-consuming task. There is a room for test all checking and defaults on tests.
+
+    @ version 0.05
+    ---------------------------- ------ ------ ------ ------ ------ ------ ------
+    File                           stmt   bran   cond    sub    pod   time  total
+    ---------------------------- ------ ------ ------ ------ ------ ------ ------
+    blib/lib/Stash/REST.pm         96.4   74.5   68.4  100.0  100.0  100.0   86.7
+    Total                          96.4   74.5   68.4  100.0  100.0  100.0   86.7
+    ---------------------------- ------ ------ ------ ------ ------ ------ ------
+
+
+=head1 Class::Trigger names
+
+
+Updated @ Stash-REST 0.05
+
+    $ grep  '$self0_05->call_trigger' lib/Stash/REST.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_04-/; print' | sort | uniq
+
+Trigger / variables:
+
+    $self0_05->call_trigger( 'after_stash_ctx', { stash => $staname, results => \@ret });
+    $self0_05->call_trigger( 'before_rest_delete', { url => $url, conf => \%conf } );
+    $self0_05->call_trigger( 'before_rest_get', { url => $url, conf => \%conf } );
+    $self0_05->call_trigger( 'before_rest_head', { url => $url, conf => \%conf } );
+
+
+
+
 
 =head1 AUTHOR
 
-Renato E<lt>rentocron@cpan.orgE<gt>
+Renato CRON E<lt>rentocron@cpan.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2015- Renato
+Copyright 2015- Renato CRON
+
+Thanks to http://eokoe.com
 
 =head1 LICENSE
 
@@ -35,5 +346,7 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =head1 SEE ALSO
+
+L<Stash::REST::TestMore>, L<Class::Trigger>
 
 =cut
