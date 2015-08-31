@@ -40,7 +40,11 @@ Yaadgom output string in markdown format, so you can use those generated files o
 ## new
 
     Yaadgom->new(
-        file_name => "$0"
+        # add file_name on the generated document fragment, if you can pass undef to disable this feature
+        file_name => "$0",
+
+        # in case you want to do something when this objects destroy, like call ->export_to_dir
+        on_destroy => sub { .. },
     );
 
 ## process\_response
@@ -56,13 +60,28 @@ Yaadgom output string in markdown format, so you can use those generated files o
         }
     );
 
+## map\_results
+
+    iterate over processed document, for each file.
+
+    $self->map_results(
+        sub {
+            my (%info) = @_;
+
+        }
+    );
+
+## export\_to\_dir
+
+    # note that this do an append operation on files, so you may reset/truncate your dir before calling this.
+    # this is done because you may want multiple tests writing to same file, in different moments.
+    $self->export_to_dir(
+        dir => '/tmp/
+    );
+
 # Class::Trigger names
 
 On each trigger, the returning is used as the new version of the input. Except for process\_extras, where all returnings are concatenated.
-
-Updated @ Stash-REST 0.01
-
-    $ grep  '$self_0_01->call_trigger' lib/Yaadgom.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_01-/; print' | sort | uniq
 
 Trigger / variables:
 
@@ -73,6 +92,82 @@ Trigger / variables:
     $self0_01->call_trigger( 'format_after_extras', { str => $str } );
     $self0_01->call_trigger( 'process_extras', %opt );
     $self0_01->call_trigger( 'format_generated_str', { str => $format_time } );
+
+Updated @ Stash-REST 0.02
+
+    $ grep  '$self_0_01->call_trigger' lib/Yaadgom.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_01-/; print' | sort | uniq
+
+# Using Stash::REST for testing and writing docs at same time
+
+Please read first [Stash::REST](https://metacpan.org/pod/Stash::REST) SYNOPSIS to understand how to use it.
+
+Then, create some package that extends Stash::REST (you can call add\_trigger on the object of Stash::REST if you want too)
+
+    package YourProject;
+
+    use base qw(Stash::REST);
+    use strict;
+
+    YourProject->add_trigger( 'process_response' => \&on_process_response );
+
+    use Yaadgom;
+
+    my $dir = $ENV{DAUX_OUTPUT_DIR};
+
+    my $reuse_last_daux_top;
+    my $reuse_count;
+
+    my $instance = Yaadgom->new( on_destroy => \&_on_destroy );
+
+    sub on_process_response {
+        my ( $self, $opt ) = @_;
+
+        my %conf = %{ $opt->{conf} };
+        my $req  = $opt->{req};
+        my $res  = $opt->{res};
+        return if ( $opt->{res}->code != $conf{code} );
+        $conf{folder} = $reuse_last_daux_top if $reuse_count;
+        return unless $conf{folder};
+        $reuse_count--;
+
+        if ( $reuse_count <= 0 ) {
+            $reuse_last_daux_top = $conf{folder};
+            $reuse_count = exists $conf{list} ? 2 : $conf{code} == 201 ? 1 : 0;
+        }
+
+        $instance->process_response(
+            req    => $req,
+            res    => $res,
+            folder => $conf{folder},
+
+            extra => { %conf }
+        );
+
+    }
+
+    sub _on_destroy {
+
+        my $going_die = shift;
+        $going_die->export_to_dir( dir => $dir );
+
+    }
+
+    1;
+
+Now, after you run your script
+
+    $obj = YourProject->new( ...)
+
+    $obj->rest_post(
+        '/zuzus',
+        name  => 'add zuzu',
+        list  => 1,
+        stash => 'easyname',
+        folder => 'SomeFolder',
+        params => [ name => 'foo', ]
+    );
+
+You should have on $ENV{DAUX\_OUTPUT\_DIR} a SomeFolder directory with zuzus.md inside.
 
 # AUTHOR
 

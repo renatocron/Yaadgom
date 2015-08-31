@@ -1,6 +1,9 @@
 Revision history for Yaadgom
 
 {{$NEXT}}
+        - Add on_destroy callback
+        - Documment all methods
+        - Add an example using with Stash::REST
 
 0.01  2015-08-31 18:53:46 BRT
 

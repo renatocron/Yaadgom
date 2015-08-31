@@ -3,7 +3,7 @@ package Yaadgom;
 use 5.008_005;
 our $VERSION = '0.01';
 use Moo;
-
+use Devel::GlobalDestruction;
 
 
 use Encode qw/decode/;
@@ -169,7 +169,7 @@ sub export_to_dir {
             my $folder = $info{folder};
             my $file   = $dir . '/' . $folder . '/' . $info{file} . '.md';
 
-            mkdir $dir . '/' . $folder or croak "can't mkdir $dir/$folder $!";
+            mkdir $dir . '/' . $folder;
 
             open my $fh, '>>:utf8', $file or croak "cant open file $file $!";
             print $fh $str;
@@ -221,6 +221,17 @@ sub map_results {
             }
         }
 
+    }
+
+}
+
+has 'on_destroy' => (is => 'rw');
+
+sub DESTROY {
+    my $self = shift;
+
+    if (ref $self->on_destroy eq 'CODE'){
+        $self->on_destroy->($self);
     }
 
 }
@@ -284,7 +295,11 @@ Yaadgom output string in markdown format, so you can use those generated files o
 =head2 new
 
     Yaadgom->new(
-        file_name => "$0"
+        # add file_name on the generated document fragment, if you can pass undef to disable this feature
+        file_name => "$0",
+
+        # in case you want to do something when this objects destroy, like call ->export_to_dir
+        on_destroy => sub { .. },
     );
 
 =head2 process_response
@@ -300,14 +315,29 @@ Yaadgom output string in markdown format, so you can use those generated files o
         }
     );
 
+=head2 map_results
+
+    iterate over processed document, for each file.
+
+    $self->map_results(
+        sub {
+            my (%info) = @_;
+
+        }
+    );
+
+=head2 export_to_dir
+
+    # note that this do an append operation on files, so you may reset/truncate your dir before calling this.
+    # this is done because you may want multiple tests writing to same file, in different moments.
+    $self->export_to_dir(
+        dir => '/tmp/
+    );
 
 =head1 Class::Trigger names
 
 On each trigger, the returning is used as the new version of the input. Except for process_extras, where all returnings are concatenated.
 
-Updated @ Stash-REST 0.01
-
-    $ grep  '$self_0_01->call_trigger' lib/Yaadgom.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_01-/; print' | sort | uniq
 
 Trigger / variables:
 
@@ -319,6 +349,83 @@ Trigger / variables:
     $self0_01->call_trigger( 'process_extras', %opt );
     $self0_01->call_trigger( 'format_generated_str', { str => $format_time } );
 
+Updated @ Stash-REST 0.02
+
+    $ grep  '$self_0_01->call_trigger' lib/Yaadgom.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_01-/; print' | sort | uniq
+
+=head1 Using Stash::REST for testing and writing docs at same time
+
+
+Please read first L<Stash::REST> SYNOPSIS to understand how to use it.
+
+
+Then, create some package that extends Stash::REST (you can call add_trigger on the object of Stash::REST if you want too)
+
+    package YourProject;
+
+    use base qw(Stash::REST);
+    use strict;
+
+    YourProject->add_trigger( 'process_response' => \&on_process_response );
+
+    use Yaadgom;
+
+    my $dir = $ENV{DAUX_OUTPUT_DIR};
+
+    my $reuse_last_daux_top;
+    my $reuse_count;
+
+    my $instance = Yaadgom->new( on_destroy => \&_on_destroy );
+
+    sub on_process_response {
+        my ( $self, $opt ) = @_;
+
+        my %conf = %{ $opt->{conf} };
+        my $req  = $opt->{req};
+        my $res  = $opt->{res};
+        return if ( $opt->{res}->code != $conf{code} );
+        $conf{folder} = $reuse_last_daux_top if $reuse_count;
+        return unless $conf{folder};
+        $reuse_count--;
+
+        if ( $reuse_count <= 0 ) {
+            $reuse_last_daux_top = $conf{folder};
+            $reuse_count = exists $conf{list} ? 2 : $conf{code} == 201 ? 1 : 0;
+        }
+
+        $instance->process_response(
+            req    => $req,
+            res    => $res,
+            folder => $conf{folder},
+
+            extra => { %conf }
+        );
+
+    }
+
+    sub _on_destroy {
+
+        my $going_die = shift;
+        $going_die->export_to_dir( dir => $dir );
+
+    }
+
+    1;
+
+Now, after you run your script
+
+    $obj = YourProject->new( ...)
+
+    $obj->rest_post(
+        '/zuzus',
+        name  => 'add zuzu',
+        list  => 1,
+        stash => 'easyname',
+        folder => 'SomeFolder',
+        params => [ name => 'foo', ]
+    );
+
+You should have on $ENV{DAUX_OUTPUT_DIR} a SomeFolder directory with zuzus.md inside.
 
 =head1 AUTHOR
 
