@@ -9,7 +9,7 @@ Yaadgom - Yet Another Automatic Document Generator (On Markdown)
     # create an instance
     my $foo = Yaadgom->new;
 
-    # call this methoed each request you want to document
+    # call this method each request you want to document
     $foo->process_response(
         folder => 'test', # what 'folder' or 'category' this is
         weight => 1     , # default order
@@ -33,7 +33,17 @@ Yaadgom - Yet Another Automatic Document Generator (On Markdown)
 
 Yaadgom helps you document your requests (to create an API Reference or something like that).
 
-Yaadgom output string in markdown format, so you can use those generated files on http://daux.io or other tools.
+Yaadgom output string in markdown format, so you can use those generated files on http://daux.io or github
+
+For each time you call "process\_response" it will generate a new section composed of:
+
+    ## Title with $desc
+    defined $file_name ? <small>$file_name</small>
+    exists $opt{extra}{name} ? > $opt{extra}{name}
+    ### Request
+    <pre> &format_body( $req->as_string ) </pre>
+    ### Response
+    <pre> &format_body( $res->as_string ) </pre>
 
 # METHODS
 
@@ -73,7 +83,7 @@ Yaadgom output string in markdown format, so you can use those generated files o
 
 ## export\_to\_dir
 
-    # note that this do an append operation on files, so you may reset/truncate your dir before calling this.
+    # note that this do an append operation on files, so you may reset / truncate your directory before calling this.
     # this is done because you may want multiple tests writing to same file, in different moments.
     $self->export_to_dir(
         dir => '/tmp/
@@ -81,19 +91,19 @@ Yaadgom output string in markdown format, so you can use those generated files o
 
 # Class::Trigger names
 
-On each trigger, the returning is used as the new version of the input. Except for process\_extras, where all returnings are concatenated.
+On each trigger, return is used as the new version of the input. Except for \*process\_extras\*, where all return are concatenated.
 
 Trigger / variables:
 
     $self0_01->call_trigger( 'filename_generated', { req => $req, file => $file } );
     $self0_01->call_trigger( 'format_title', { header => $desc } );
-    $self0_01->call_trigger( 'format_response_body', { response_str => $body } );
+    $self0_01->call_trigger( 'format_body', { response_str => $body } );
     $self0_01->call_trigger( 'format_before_extras', { str => $str } );
     $self0_01->call_trigger( 'format_after_extras', { str => $str } );
     $self0_01->call_trigger( 'process_extras', %opt );
     $self0_01->call_trigger( 'format_generated_str', { str => $format_time } );
 
-Updated @ Stash-REST 0.02
+Updated @ Stash-REST 0.03
 
     $ grep  '$self_0_01->call_trigger' lib/Yaadgom.pm  | perl -ne '$_ =~ s/^\s+//; $_ =~ s/self-/self0_01-/; print' | sort | uniq
 
@@ -114,6 +124,7 @@ Then, create some package that extends Stash::REST (you can call add\_trigger on
 
     my $dir = $ENV{DAUX_OUTPUT_DIR};
 
+    # workarround for re-using same folder when Stash::REST call get and list of an created object.
     my $reuse_last_daux_top;
     my $reuse_count;
 
@@ -162,12 +173,13 @@ Now, after you run your script
         '/zuzus',
         name  => 'add zuzu',
         list  => 1,
-        stash => 'easyname',
         folder => 'SomeFolder',
         params => [ name => 'foo', ]
     );
 
 You should have on $ENV{DAUX\_OUTPUT\_DIR} a SomeFolder directory with zuzus.md inside.
+
+If you copy those .md files into daux.io/docs folder, you can build something like this:
 
 # AUTHOR
 
