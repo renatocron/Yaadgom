@@ -1,6 +1,8 @@
 Revision history for Yaadgom
 
 {{$NEXT}}
+
+0.04  2015-09-13 07:16:24 BRT
     - added slash_filename_replacement option
 
 0.03  2015-09-01 08:01:58 BRT
