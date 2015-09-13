@@ -22,6 +22,8 @@ sub _build_json {
     JSON::MaybeXS->new( utf8 => 1, pretty => 1, canonical => 1 );
 }
 
+has 'slash_filename_replacement' => (is => 'rw', default => sub { '-' };
+
 has '_results'  => ( is => 'rw', default => sub { +{} } );
 has 'file_name' => ( is => 'rw', default => sub { $0 } );
 
@@ -38,10 +40,12 @@ sub process_response {
         }
     }
 
+    my $rep = $self->slash_filename_replacement;
+
     my $file = URI->new( $req->uri->path )->path;
     $file =~ s/^\///;
     $file =~ s/\/$//;
-    $file =~ s/\//-/gio;
+    $file =~ s/\//$rep/gio;
     $file =~ s/[0-9]+/*/go;
     $file =~ s/[^a-z-*]//gio;
 
