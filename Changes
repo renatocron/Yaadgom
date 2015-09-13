@@ -1,6 +1,7 @@
 Revision history for Yaadgom
 
 {{$NEXT}}
+    - Fix slash_filename_replacement
 
 0.04  2015-09-13 07:16:24 BRT
     - added slash_filename_replacement option

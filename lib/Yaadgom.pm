@@ -1,7 +1,7 @@
 use strict;
 package Yaadgom;
 use 5.008_005;
-our $VERSION = '0.04';
+our $VERSION = '0.042';
 use Moo;
 use Devel::GlobalDestruction;
 
@@ -47,7 +47,7 @@ sub process_response {
     $file =~ s/\/$//;
     $file =~ s/\//$rep/gio;
     $file =~ s/[0-9]+/*/go;
-    $file =~ s/[^a-z-*]//gio;
+    $file =~ s/[^a-z$sep*]//gio;
 
     $self->call_trigger( 'filename_generated', { req => $req, file => $file } );
     my @results = @{ $self->last_trigger_results };
