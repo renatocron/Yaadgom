@@ -22,7 +22,7 @@ sub _build_json {
     JSON::MaybeXS->new( utf8 => 1, pretty => 1, canonical => 1 );
 }
 
-has 'slash_filename_replacement' => (is => 'rw', default => sub { '-' };
+has 'slash_filename_replacement' => (is => 'rw', default => sub { '-' });
 
 has '_results'  => ( is => 'rw', default => sub { +{} } );
 has 'file_name' => ( is => 'rw', default => sub { $0 } );
