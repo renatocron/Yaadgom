@@ -51,7 +51,7 @@ sub process_response {
 
     $self->call_trigger( 'filename_generated', { req => $req, file => $file } );
     my @results = @{ $self->last_trigger_results };
-    $file = $results[-1] if $results[-1];
+    ($file) = @{$results[-1]} if $results[-1];
 
     my $weight = defined $opt{weight} && $opt{weight} =~ /^[0-9]+$/ ? $opt{weight} : 1;
 
@@ -95,7 +95,7 @@ sub format_body {
 
     $self->call_trigger( 'format_body', { response_str => $body } );
     my @results = @{ $self->last_trigger_results };
-    $body = $results[-1] if $results[-1];
+    ($body) = @{$results[-1]} if $results[-1];
 
     return "$header\n$body";
 }
@@ -113,7 +113,7 @@ sub get_markdown {
     do {
         $self->call_trigger( 'format_title', { title => $desc } );
         my @results = @{ $self->last_trigger_results };
-        $desc = $results[-1] if $results[-1];
+        ($desc) = @{$results[-1]} if $results[-1];
     };
 
     my $str = join '',
@@ -128,7 +128,7 @@ sub get_markdown {
     do {
         $self->call_trigger( 'format_before_extras', { str => $str } );
         my @results = @{ $self->last_trigger_results };
-        $str = $results[-1] if $results[-1];
+        ($str) = @{$results[-1]} if $results[-1];
     };
 
     do {
@@ -153,7 +153,7 @@ sub get_markdown {
     do {
         $self->call_trigger( 'format_after_extras', { str => $str } );
         my @results = @{ $self->last_trigger_results };
-        $str = $results[-1] if $results[-1];
+        ($str) = @{$results[-1]} if $results[-1];
     };
 
     return $str;
@@ -211,7 +211,7 @@ sub map_results {
                 do {
                     $self->call_trigger( 'format_generated_str', { str => $format_time } );
                     my @results = @{ $self->last_trigger_results };
-                    $format_time = $results[-1] if $results[-1];
+                    ($format_time) = @{$results[-1]} if $results[-1];
                 };
 
                 $str .= $format_time;

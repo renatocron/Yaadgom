@@ -1,6 +1,7 @@
 Revision history for Yaadgom
 
 {{$NEXT}}
+    - Fix reading trigger results correctly instead of ARRAYREF(0x...)
 
 0.042  2015-09-13 07:21:09 BRT
     - Fix slash_filename_replacement
