@@ -1,6 +1,7 @@
 Revision history for Yaadgom
 
 {{$NEXT}}
+    - file => 'anything/foo' is now possible, this bypass automatic filename from URI
 
 0.05  2015-10-01 09:56:20 BRT
     - Fix reading trigger results correctly instead of ARRAYREF(0x...)
