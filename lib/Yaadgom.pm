@@ -1,10 +1,10 @@
 use strict;
+
 package Yaadgom;
 use 5.008_005;
 our $VERSION = '0.05';
 use Moo;
 use Devel::GlobalDestruction;
-
 
 use Encode qw/decode/;
 use JSON::MaybeXS;
@@ -22,7 +22,7 @@ sub _build_json {
     JSON::MaybeXS->new( utf8 => 1, pretty => 1, canonical => 1 );
 }
 
-has 'slash_filename_replacement' => (is => 'rw', default => sub { '-' });
+has 'slash_filename_replacement' => ( is => 'rw', default => sub { '-' } );
 
 has '_results'  => ( is => 'rw', default => sub { +{} } );
 has 'file_name' => ( is => 'rw', default => sub { $0 } );
@@ -42,16 +42,21 @@ sub process_response {
 
     my $rep = $self->slash_filename_replacement;
 
-    my $file = URI->new( $req->uri->path )->path;
+    my $file = exists $opt{file} ? $opt{file} : undef;
+
+    unless ($file) {
+        $file = URI->new( $req->uri->path )->path;
+        $file =~ s/\//$rep/gio;
+        $file =~ s/[0-9]+/*/go;
+        $file =~ s/[^a-z$rep*]//gio;
+
+        $self->call_trigger( 'filename_generated', { req => $req, file => $file } );
+        my @results = @{ $self->last_trigger_results };
+        ($file) = @{ $results[-1] } if $results[-1];
+    }
+
     $file =~ s/^\///;
     $file =~ s/\/$//;
-    $file =~ s/\//$rep/gio;
-    $file =~ s/[0-9]+/*/go;
-    $file =~ s/[^a-z$rep*]//gio;
-
-    $self->call_trigger( 'filename_generated', { req => $req, file => $file } );
-    my @results = @{ $self->last_trigger_results };
-    ($file) = @{$results[-1]} if $results[-1];
 
     my $weight = defined $opt{weight} && $opt{weight} =~ /^[0-9]+$/ ? $opt{weight} : 1;
 
@@ -95,7 +100,7 @@ sub format_body {
 
     $self->call_trigger( 'format_body', { response_str => $body } );
     my @results = @{ $self->last_trigger_results };
-    ($body) = @{$results[-1]} if $results[-1];
+    ($body) = @{ $results[-1] } if $results[-1];
 
     return "$header\n$body";
 }
@@ -113,7 +118,7 @@ sub get_markdown {
     do {
         $self->call_trigger( 'format_title', { title => $desc } );
         my @results = @{ $self->last_trigger_results };
-        ($desc) = @{$results[-1]} if $results[-1];
+        ($desc) = @{ $results[-1] } if $results[-1];
     };
 
     my $str = join '',
@@ -128,7 +133,7 @@ sub get_markdown {
     do {
         $self->call_trigger( 'format_before_extras', { str => $str } );
         my @results = @{ $self->last_trigger_results };
-        ($str) = @{$results[-1]} if $results[-1];
+        ($str) = @{ $results[-1] } if $results[-1];
     };
 
     do {
@@ -144,8 +149,9 @@ sub get_markdown {
             $str .= $self->_write_line( '#### ' . $key );
             if ( ref $maybealist eq 'ARRAY' ) {
                 $str .= $self->_write_line( '* ' . $_ ) for @$maybealist;
-            }else{
-                $str .= $self->_write_line( '- ' . $maybealist )
+            }
+            else {
+                $str .= $self->_write_line( '- ' . $maybealist );
             }
         }
     }
@@ -153,7 +159,7 @@ sub get_markdown {
     do {
         $self->call_trigger( 'format_after_extras', { str => $str } );
         my @results = @{ $self->last_trigger_results };
-        ($str) = @{$results[-1]} if $results[-1];
+        ($str) = @{ $results[-1] } if $results[-1];
     };
 
     return $str;
@@ -211,7 +217,7 @@ sub map_results {
                 do {
                     $self->call_trigger( 'format_generated_str', { str => $format_time } );
                     my @results = @{ $self->last_trigger_results };
-                    ($format_time) = @{$results[-1]} if $results[-1];
+                    ($format_time) = @{ $results[-1] } if $results[-1];
                 };
 
                 $str .= $format_time;
@@ -229,12 +235,12 @@ sub map_results {
 
 }
 
-has 'on_destroy' => (is => 'rw');
+has 'on_destroy' => ( is => 'rw' );
 
 sub DESTROY {
     my $self = shift;
 
-    if (ref $self->on_destroy eq 'CODE'){
+    if ( ref $self->on_destroy eq 'CODE' ) {
         $self->on_destroy->($self);
     }
 
