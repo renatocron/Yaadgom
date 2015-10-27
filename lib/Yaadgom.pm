@@ -44,8 +44,15 @@ sub process_response {
 
     my $file = exists $opt{file} ? $opt{file} : undef;
 
-    unless ($file) {
+    if ($file) {
+        $file =~ s/^\///;
+        $file =~ s/\/$//;
+    }
+    else {
         $file = URI->new( $req->uri->path )->path;
+
+        $file =~ s/^\///;
+        $file =~ s/\/$//;
         $file =~ s/\//$rep/gio;
         $file =~ s/[0-9]+/*/go;
         $file =~ s/[^a-z$rep*]//gio;
@@ -54,9 +61,6 @@ sub process_response {
         my @results = @{ $self->last_trigger_results };
         ($file) = @{ $results[-1] } if $results[-1];
     }
-
-    $file =~ s/^\///;
-    $file =~ s/\/$//;
 
     my $weight = defined $opt{weight} && $opt{weight} =~ /^[0-9]+$/ ? $opt{weight} : 1;
 
