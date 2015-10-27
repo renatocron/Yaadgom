@@ -1,6 +1,8 @@
 Revision history for Yaadgom
 
 {{$NEXT}}
+
+0.06  2015-10-27 19:30:21 BRST
     - file => 'anything/foo' is now possible, this bypass automatic filename from URI
 
 0.05  2015-10-01 09:56:20 BRT
