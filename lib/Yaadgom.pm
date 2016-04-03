@@ -2,7 +2,7 @@ use strict;
 
 package Yaadgom;
 use 5.008_005;
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 use Moo;
 use Devel::GlobalDestruction;
 
