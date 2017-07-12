@@ -76,12 +76,12 @@ sub process_response {
 
 sub _write_title {
     my ( $self, $title ) = @_;
-    "## $title\n\n";
+    "\n## $title\n\n";
 }
 
 sub _write_subtitle {
     my ( $self, $title ) = @_;
-    "### $title\n\n";
+    "\n### $title\n\n";
 }
 
 sub _write_line {
