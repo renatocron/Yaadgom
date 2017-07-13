@@ -183,7 +183,7 @@ If you copy those .md files into daux.io/docs folder, you can build something li
 
 # AUTHOR
 
-Renato CRON &lt;rentocron@cpan.org>
+Renato CRON <rentocron@cpan.org>
 
 # COPYRIGHT
 

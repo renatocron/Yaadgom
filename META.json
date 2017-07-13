@@ -4,11 +4,7 @@
       "Renato CRON <rentocron@cpan.org>"
    ],
    "dynamic_config" : 0,
-<<<<<<< HEAD
    "generated_by" : "Dist::Milla version v1.0.18, Dist::Zilla version 6.010, CPAN::Meta::Converter version 2.150005",
-=======
-   "generated_by" : "Dist::Zilla version 5.043, Dist::Milla version v1.0.15, CPAN::Meta::Converter version 2.150005",
->>>>>>> ba660a516cb432607f6417e06967ca11e07d5b00
    "license" : [
       "perl_5"
    ],
@@ -73,15 +69,10 @@
          "web" : "https://github.com/renatocron/Yaadgom"
       }
    },
-   "version" : "0.07",
+   "version" : "0.08",
    "x_contributors" : [
-<<<<<<< HEAD
-      "Renato Cron <renato.cron@gmail.com>"
+      "Renato CRON <renato.cron@gmail.com>"
    ],
    "x_serialization_backend" : "Cpanel::JSON::XS version 3.0233"
-=======
-      "Renato CRON <renato.cron@gmail.com>"
-   ]
->>>>>>> ba660a516cb432607f6417e06967ca11e07d5b00
 }
 
