@@ -2,7 +2,7 @@ use strict;
 
 package Yaadgom;
 use 5.008_005;
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 use Moo;
 use Devel::GlobalDestruction;
 
@@ -153,9 +153,11 @@ sub get_markdown {
             $str .= $self->_write_line( '#### ' . $key );
             if ( ref $maybealist eq 'ARRAY' ) {
                 $str .= $self->_write_line( '* ' . $_ ) for @$maybealist;
+                $str .= "\n";
             }
             else {
                 $str .= $self->_write_line( '- ' . $maybealist );
+                $str .= "\n";
             }
         }
     }
