@@ -1,6 +1,7 @@
 Revision history for Yaadgom
 
 {{$NEXT}}
+    - Changes on outputed markdown (fix for new github parser)
 
 0.06  2015-10-27 19:30:21 BRST
     - file => 'anything/foo' is now possible, this bypass automatic filename from URI

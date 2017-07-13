@@ -106,7 +106,7 @@ sub format_body {
     my @results = @{ $self->last_trigger_results };
     ($body) = @{ $results[-1] } if $results[-1];
 
-    return "$header\n$body";
+    return "$header\n\n$body";
 }
 
 sub get_markdown {
