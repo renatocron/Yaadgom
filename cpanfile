@@ -6,6 +6,7 @@ requires 'Carp';
 requires 'Class::Trigger', '0.14';
 requires 'namespace::clean';
 requires 'JSON::MaybeXS';
+requires 'Devel::GlobalDestruction';
 
 on test => sub {
     requires 'Test::More', '0.96';
